@@ -1,12 +1,12 @@
 let login = async function(username, password) {
     sessionStorage.setItem("username", username);
     sessionStorage.setItem("password", password);
-    window.location.href = "/view";
+    window.location.href = "/user";
 }
 
 let verify_user = function(username, password) {
     let xhr = new XMLHttpRequest();
-    xhr.open("POST", "/user");
+    xhr.open("POST", "/verify");
 
     xhr.setRequestHeader("Accept", "application/json");
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -38,7 +38,7 @@ window.onload = function() {
         console.log("no user found");
     }
     else {
-        window.location.href = "/view";
+        window.location.href = "/user";
     }
 }
 
@@ -50,4 +50,4 @@ document.addEventListener("keypress", function(event) {
       // Trigger the button element with a click
       document.getElementById("loginbtn").click();
     }
-  }); 
+}); 

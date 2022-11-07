@@ -25,10 +25,22 @@ fn index() -> Template {
     Template::render("event", rocket_dyn_templates::context!{})
 }
 
-#[rocket::get("/login")]
+#[rocket::get("/")]
 fn login() -> Template {
 
     Template::render("login", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/register")]
+fn register() -> Template {
+
+    Template::render("register", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/user")]
+fn user() -> String {
+
+    "user page".to_string()
 }
 
 
@@ -65,7 +77,7 @@ fn verify_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Acc
     let new_user = data.into_inner();
 
     if users.verify_user(&new_user) {
-        return Ok(status::Accepted(Some(format!("200 OK"))));
+        return Ok(status::Accepted(Some(format!(""))));
     }
 
     Err(status::BadRequest(Some(format!("Username or Password is invalid"))))
@@ -111,7 +123,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, verify_user, delete_user, register_user, get_file, stream])
+            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, get_file, stream])
             .attach(Template::fairing())
             .manage(users)
             .launch()
