@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 use rocket::{
     self,
@@ -62,7 +63,6 @@ fn register_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::A
 
     match users.add_new_user(&new_user) {
         Ok(_) => {
-            users.update_file();
             return Ok(status::Accepted(Some(format!(""))));
         },
         Err(_) => {
@@ -98,7 +98,6 @@ fn delete_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Acc
     };
 
     users.remove_user(&user);
-    users.update_file();
 
     return Ok(status::Accepted(Some(format!("200 OK"))));
 }
@@ -110,8 +109,26 @@ async fn get_file(file: PathBuf) -> Option<NamedFile> {
 }
 
 
+fn update_file(users: TUsers, delay: Duration) {
+    loop {
+        thread::sleep(delay);
+        match users.lock() {
+            Ok(n) => {
+                n.update_file();
+            },
+            Err(_) => {},
+        }
+    }
+}
+
 pub fn start_api() {
     let users: TUsers = Arc::new(Mutex::new(Users::new("users.txt".to_string())));
+
+    let users_copy = Arc::clone(&users);
+
+    thread::spawn(move || {
+        update_file(users_copy, Duration::from_millis(2000));
+    });
 
 
     rocket::tokio::runtime::Builder::new_multi_thread()

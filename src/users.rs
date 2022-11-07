@@ -1,10 +1,9 @@
-use std::collections::{HashSet, hash_set};
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 use std::fs::OpenOptions;
 use std::io::{prelude::*, SeekFrom};
 
-use rocket::http::ext::IntoCollection;
 use rocket::serde::Deserialize;
 
 use crate::passwords::{hash_new, hash_old};
@@ -213,7 +212,6 @@ impl Users {
         hash == user.hash
     }
 }
-
 
 
 #[test]
