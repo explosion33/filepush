@@ -1,6 +1,10 @@
+use std::collections::{HashSet, hash_set};
+use std::hash::{Hash, Hasher};
+
 use std::fs::OpenOptions;
 use std::io::{prelude::*, SeekFrom};
 
+use rocket::http::ext::IntoCollection;
 use rocket::serde::Deserialize;
 
 use crate::passwords::{hash_new, hash_old};
@@ -11,7 +15,7 @@ pub struct NewUser {
     pub password: String,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Eq, Clone, Debug)]
 pub struct User {
     username: String,
     hash: String,
@@ -47,16 +51,28 @@ impl User {
 
 }
 
+impl Hash for User {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.username.hash(state);
+    }
+}
+
+impl PartialEq for User {
+    fn eq(&self, other: &User) -> bool {
+        self.username == other.username
+    }
+}
+
 pub struct Users {
     path: String,
-    users: Vec<User>,
+    users: HashSet<User>,
 }
 
 impl Users {
     pub fn new(path: String) -> Users {
         let users = match Users::get_users_file(&path) {
             Ok(n) => n,
-            Err(_) => {vec![]},
+            Err(_) => {HashSet::new()},
         };
 
         Users {path, users}
@@ -64,26 +80,25 @@ impl Users {
 
     pub fn remove_user(&mut self, user: &User) {
         let mut index: usize = 0;
-        for u in self.users.iter() {
-            if u.eq(user) {
-                self.users.remove(index);
-                break;
-            }
-            index += 1;
-        }
+
+        self.users.remove(&user);
     }
 
     pub fn get_users(&self) -> Vec<User>{
-        self.users.clone()
+        self.users.clone().into_iter().collect()
     }
 
     pub fn find_user(&self, username: &String) -> Option<User> {
-        for user in self.users.iter() {
-            if &user.username == username {
-                return Some(user.clone());
-            } 
-        }
-        return None;
+        let dummy_user: User = User {
+            username: username.clone(),
+            hash: String::new(),
+            salt: String::new(),
+        };
+
+        match self.users.get(&dummy_user) {
+            Some(n) => {return Some(n.to_owned())},
+            None => {return None},
+        };
     }
 
 }
@@ -108,7 +123,7 @@ impl Users {
         Ok(())
     }
     
-    fn get_users_file(path: &String) -> Result<Vec<User>, String> {
+    fn get_users_file(path: &String) -> Result<HashSet<User>, String> {
         let mut file = match OpenOptions::new()
         .read(true)
         .open(path) {
@@ -116,7 +131,7 @@ impl Users {
             Err(n) => {return Err(format!("Error opening file"))},
         };
     
-        let mut users: Vec<User> = vec![];
+        let mut users: HashSet<User> = HashSet::new();
         
         let mut contenets = String::new();
         match file.read_to_string(&mut contenets) {
@@ -130,7 +145,7 @@ impl Users {
                 Err(_) => {return Err("Error parsing user".to_string())},
             };
     
-            users.push(user);
+            users.insert(user);
         }
     
         
@@ -164,7 +179,7 @@ impl Users {
             },
         };
 
-        let _ = Users::write_users(&self.path, &self.users);
+        let _ = Users::write_users(&self.path, &self.get_users());
 
     }
 }
@@ -182,7 +197,7 @@ impl Users {
 
         let u = User {username: user.username.clone(), hash, salt};
 
-        self.users.push(u);
+        self.users.insert(u);
 
         Ok(())
     }
