@@ -57,6 +57,6 @@ document.addEventListener("keypress", function(event) {
       // Cancel the default action, if needed
       event.preventDefault();
       // Trigger the button element with a click
-      document.getElementById("loginbtn").click();
+      document.getElementById("regbtn").click();
     }
 }); 
