@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- The page supports both dark and light color schemes,
+         and the page author prefers / default is light. -->
+    <meta name="color-scheme" content="dark light">
+
+    <script src="/static/login.js"></script> 
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/bootstrap_dark.css">
+
+
+
+    <title>Webhooks</title>
+</head>
+<body>
+    
+    <div class="container" style="margin-top: 16px;">
+        <div class="row text-center">
+            <h1>Armstrong Labs Webhooks</h1>
+        </div>
+    </div>
+
+
+    <div class="jumbotron vertical-center">
+        <div class="container" style="margin-bottom: 10%">
+            <div class="row text-center">
+                <div class="col-lg-6 offset-lg-3" id="login" style="border: 1px solid #979797; height: 220px;">
+                    <h3>Login</h3>
+                    <br>
+                    
+                    <input id="user" type="text", placeholder="Username" style="margin-bottom: 8px;">
+
+                    <br>
+
+                    <input id="pass" type="password", placeholder="Password" style="margin-bottom: 8px;">
+
+                    <br>
+
+                    <button type="button" id="loginbtn" class="btn btn-primary" onclick="verify_user(document.getElementById('user').value, document.getElementById('pass').value)">Login</button>
+                
+                    <br>
+
+                    <p id="error" style="margin-top: 8px;" class="text-danger"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
