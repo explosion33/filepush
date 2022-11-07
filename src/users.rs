@@ -1,14 +1,14 @@
 use std::fs::OpenOptions;
 use std::io::{prelude::*, SeekFrom};
 
-use serde::Deserialize;
+use rocket::serde::Deserialize;
 
 use crate::passwords::{hash_new, hash_old};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct NewUser {
-    username: String,
-    password: String,
+    pub username: String,
+    pub password: String,
 }
 
 #[derive(PartialEq, Clone, Debug)]
