@@ -8,22 +8,19 @@ use rocket::{
     self,
     Config,
     State,
-    fs::{NamedFile, TempFile},
-    form::{Form, FromForm},
+    fs::NamedFile,
     Request,
     request::{self, Outcome, FromRequest},
     response::status,
     response::stream::{Event, EventStream},
     tokio::time::{self, Duration},
     serde::json::Json,
-    serde::Deserialize,
-    serde::Serialize,
     http::Status,
     Data,
 };
 use rocket_dyn_templates::Template;
 
-use crate::users::{Users, User, NewUser};
+use crate::users::{Users, NewUser};
 
 pub type TUsers = Arc<Mutex<Users>>;
 
@@ -108,7 +105,6 @@ fn delete_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Acc
 
     return Ok(status::Accepted(Some(format!("200 OK"))));
 }
-
 
 #[rocket::get("/static/<file>")]
 async fn get_file(file: PathBuf) -> Option<NamedFile> {
@@ -209,8 +205,9 @@ async fn file_upload(state: &State<TUsers>, file: Data<'_>, user: UserLogin, upl
         return users.verify_user(&user);
     };
 
-    let base = "user_images/".to_string() + user.username.as_str();
-    let path = base.clone() + "/" + safe_path(upload.filename).as_str();
+    let name: String = safe_path(upload.filename);
+    let base = "user_files/".to_string() + user.username.as_str();
+    let path = base.clone() + "/" + name.as_str();
 
     println!("{}", path);
 
@@ -240,7 +237,7 @@ async fn file_upload(state: &State<TUsers>, file: Data<'_>, user: UserLogin, upl
     // EVENT SERVER
     // FILE TIMER
 
-    Ok(status::Accepted(Some(format!("200 OK"))))
+    Ok(status::Accepted(Some(format!("{}", name))))
 
 }
 
@@ -271,6 +268,93 @@ async fn file_link(state: &State<TUsers>, user: UserLogin, file: PathBuf) -> Res
         Ok(n) => Ok(n),
         Err(_) =>  Err(status::BadRequest(Some(format!("File does not exist"))))
     }
+}
+
+#[rocket::get("/<username>/<file>")]
+async fn file_link_public(state: &State<TUsers>, username: String, file: String) -> Result<NamedFile, status::BadRequest<String>> {
+    let verify = || -> bool {
+        let users = match state.lock() {
+            Ok(n) => n,
+            Err(_) => {return false;}
+        };
+
+        match users.find_user(&username) {
+            Some(n) => n.settings.public.contains(&file.to_string()),
+            None => false,
+        }
+    };
+
+    match verify() {
+        true => {},
+        false => {
+            return Err(status::BadRequest(Some(format!("File does not exist"))));
+        },
+    }
+
+
+    let base = "user_files/".to_string() + username.as_str();
+    let path = base + "/" + file.as_str();
+
+
+    println!("{}", path);
+
+    match NamedFile::open(Path::new(&path)).await {
+        Ok(n) => Ok(n),
+        Err(n) =>  {
+            println!("{:?}", n);
+            Err(status::BadRequest(Some(format!("File does not exist"))))
+        }
+    }
+}
+
+
+#[rocket::post("/permissions/<file_name>/<visible>")]
+fn set_file_permissions(state: &State<TUsers>, file_name: String, visible: bool, user: UserLogin) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+
+    println!("{}, {}", user.username, user.password);
+
+    let mut users = match state.lock() {
+        Ok(n) => n,
+        Err(_) => {
+            return Err(status::BadRequest(Some(format!("Internal Server Error"))));
+        }
+    };
+
+    let user = NewUser {username: user.username.clone(), password: user.password};
+    match users.verify_user(&user) {
+        true => {},
+        false => {
+            return Err(status::BadRequest(Some(format!("Invalid Username or Password"))));
+        }
+    };
+
+    match users.find_user(&user.username) {
+        Some(mut n) => {
+            let mut contains: bool = false;
+            for i in 0..n.settings.public.len() {
+                if file_name == n.settings.public[i] {
+                    contains = true;
+                    if !visible {
+                        n.settings.public.remove(i);
+                        break;
+                    }
+                }
+            }
+
+            if !contains && visible {
+                n.settings.public.push(file_name);
+            }
+
+            users.update_user(n);
+
+        }
+        None => {
+            return Err(status::BadRequest(Some(format!("Invalid Username or Password"))));
+        }
+    };
+
+    Ok(status::Accepted(Some(format!("200 OK"))))
+
 }
 
 
@@ -305,7 +389,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, get_file, stream])
+            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions])
             .attach(Template::fairing())
             .manage(users)
             .launch()

@@ -119,6 +119,12 @@ impl Users {
         };
     }
 
+    pub fn update_user(&mut self, user: User) {
+        self.users.remove(&user);
+        self.users.insert(user);
+    }
+
+
 }
 
 impl Users {
