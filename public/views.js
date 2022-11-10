@@ -74,8 +74,10 @@ function uploadFile(file) {
 			localStorage.setItem(xhr.responseText, file.name);
 
             let bar = document.getElementById("progress-bar");
-            bar.style.width = "0%";
-            bar.innerText = "COMPLETED";
+            bar.style.width = "100%";
+            
+            bar.innerHTML = "<span style='color: white;'>COMPLETED</span>";
+            bar.className = "progress-bar";
 
             show_image(xhr.responseText, false);
 
@@ -94,7 +96,7 @@ function uploadFile(file) {
 			let bar = document.getElementById("progress-bar");
 			bar.style.width = percentComplete + "%";
 			if (percentComplete >= 5) {
-				bar.innerText = percentComplete + "%";
+				bar.innerHTML = "<span style='color: white;'>" + percentComplete + "%" + "</span>";
 			}
 
 		}
@@ -108,6 +110,8 @@ function uploadFile(file) {
   
       console.log(file);
       xhr.send(file);
+
+      document.getElementById("progress-bar").className = "progress-bar progress-bar-striped progress-bar-animated";
 }
 
 
