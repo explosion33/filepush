@@ -4,7 +4,8 @@ use std::hash::{Hash, Hasher};
 use std::fs::OpenOptions;
 use std::io::{prelude::*, SeekFrom};
 
-use rocket::serde::Deserialize;
+use serde_json;
+use serde::{Serialize, Deserialize};
 
 use crate::passwords::{hash_new, hash_old};
 
@@ -14,38 +15,55 @@ pub struct NewUser {
     pub password: String,
 }
 
-#[derive(Eq, Clone, Debug)]
+#[derive(Eq, Clone, Debug, Deserialize, Serialize)]
+pub struct UserSettings {
+    username: String,
+    pub public: Vec<String>,
+}
+
+impl PartialEq for UserSettings {
+    fn eq(&self, other: &UserSettings) -> bool {
+        self.username == other.username
+    }
+}
+
+impl UserSettings {
+    pub fn to_string(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+
+    pub fn from_string(string: &String) -> Result<UserSettings, ()> {
+        match serde_json::from_str(string.as_str()) {
+            Ok(n) => Ok(n),
+            Err(_) => Err(()),
+        }
+    }
+
+    pub fn new(username: &String) -> UserSettings {
+        UserSettings { username: username.clone(), public: vec![] }
+    }
+
+}
+
+
+#[derive(Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     username: String,
     hash: String,
     salt: String,
+    pub settings: UserSettings,
 }
 
 impl User {
     pub fn to_string(&self) -> String {
-        format!("{}, {}, {}", self.username, self.hash, self.salt)
+        serde_json::to_string(self).unwrap()
     }
 
     pub fn from_string(string: &String) -> Result<User, ()> {
-            let mut v = string.split(", ");
-
-            let username = match v.next() {
-                Some(n) => n,
-                None => {return Err(())},
-            }.to_string();
-
-            let hash = match v.next() {
-                Some(n) => n,
-                None => {return Err(())},
-            }.to_string();
-
-            let salt = match v.next() {
-                Some(n) => n,
-                None => {return Err(())},
-            }.to_string();
-
-            Ok(User {username, hash, salt})
-    
+        match serde_json::from_str(string.as_str()) {
+            Ok(n) => Ok(n),
+            Err(_) => Err(()),
+        }
     }
 
 }
@@ -92,6 +110,7 @@ impl Users {
             username: username.clone(),
             hash: String::new(),
             salt: String::new(),
+            settings: UserSettings::new(username),
         };
 
         match self.users.get(&dummy_user) {
@@ -194,7 +213,9 @@ impl Users {
             Err(n) => {return Err(format!("Error hashing password | {}", n));}
         };
 
-        let u = User {username: user.username.clone(), hash, salt};
+        let settings = UserSettings::new(&user.username);
+
+        let u = User {username: user.username.clone(), hash, salt, settings};
 
         self.users.insert(u);
 
@@ -261,16 +282,3 @@ fn test_users() {
 
 }
 
-#[test]
-fn test_to_string_from_string() {
-    let user: User = User {
-        username: "test".to_string(),
-        hash: "test".to_string(),
-        salt: "test".to_string(),
-    };
-
-    let user_string = user.to_string();
-    assert_eq!(user_string, "test, test, test".to_string());
-
-    assert_eq!(User::from_string(&user_string).unwrap(), user);
-}

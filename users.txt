@@ -1,1 +1,1 @@
-explosion33, tSYcP95815enSs/8/j0lEktb1UQ3YqtwOKcyZwyc9Es, YCxfm525UP7HLWME89MwbA
+{"username":"explosion33","hash":"qB+XjmT/MI5vnxJ0ZfVSKyw2JR8umpppqnixZuhuuyo","salt":"3m0n/1D1cXZgAupSj9T+Dg","settings":{"username":"explosion33","public":[]}}
