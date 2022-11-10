@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, read_dir};
 
 use rocket::data::ToByteUnit;
 use rocket::{
@@ -306,6 +306,44 @@ async fn file_link_public(state: &State<TUsers>, username: String, file: String)
     }
 }
 
+#[rocket::get("/images")]
+fn get_user_images(state: &State<TUsers>, user: UserLogin) -> Result<Json<Vec<(String, bool)>>, status::BadRequest<String>> {
+    let users = match state.lock() {
+        Ok(n) => n,
+        Err(_) => {return Err(status::BadRequest(Some(format!("Internal Server Error"))));}
+    };
+
+    let user = NewUser {username: user.username.clone(), password: user.password};
+    match users.verify_user(&user) {
+        true => {},
+        false => {return Err(status::BadRequest(Some(format!("Invalid Username or Passwor"))));}
+    };
+
+
+    let base = "user_files/".to_string() + user.username.as_str();
+
+    let mut out: Vec<(String, bool)> = vec![];
+
+    for file in read_dir(base).unwrap() {
+        let name = match file {
+            Ok(n) => {
+                match n.file_name().to_str() {
+                    Some(n) => n.to_string(),
+                    None => {continue;},
+                } 
+            },
+            Err(_) => {continue;},
+        };
+
+        let visible = users.find_user(&user.username).unwrap().settings.public.contains(&name);
+
+
+        out.push((name, visible));
+    }
+
+    return Ok(Json(out));
+}
+
 
 #[rocket::post("/permissions/<file_name>/<visible>")]
 fn set_file_permissions(state: &State<TUsers>, file_name: String, visible: bool, user: UserLogin) -> Result<status::Accepted<String>, status::BadRequest<String>> {
@@ -388,7 +426,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions])
+            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images])
             .attach(Template::fairing())
             .manage(users)
             .launch()

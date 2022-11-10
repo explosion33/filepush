@@ -73,7 +73,12 @@ function uploadFile(file) {
 		if (xhr.readyState == 4 && xhr.status == 202) {
 			localStorage.setItem(xhr.responseText, file.name);
 
-            // REDIRECT HERE
+            let bar = document.getElementById("progress-bar");
+            bar.style.width = "0%";
+            bar.innerText = "COMPLETED";
+
+            show_image(xhr.responseText, false);
+
 
 		}
 		else if (xhr.readyState == 4 && xhr.status != 202) {
@@ -119,6 +124,74 @@ let copy = function(img) {
     }
 }
 
+let get_user_images = function(username, password) {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", "/images");
+
+    xhr.onload = function() {
+        console.log(xhr.status);
+        if (xhr.status == 200) {
+            JSON.parse(xhr.responseText).forEach(pair => {
+                show_image(pair[0], pair[1]);
+            });
+        }
+        else {
+            display_error(xhr.responseText);
+        }
+    };
+
+    xhr.setRequestHeader("username", username);
+    xhr.setRequestHeader("password", password);
+
+    xhr.send();
+}
+
+let show_image = function(filename, public) {
+    username = sessionStorage.getItem("username");
+    let element =
+    `
+    <div class="row">
+        <div class="col-sm-9 align-items-center">
+            <p name="${window.location.origin}/${username}/${filename}">${filename}</p>
+        </div>
+        
+        <div class="col-sm-2">
+            <input name="${window.location.origin}/${username}/${filename}" type="checkbox" onchange="update_visibility(this)" ${public ? "checked" : ""}>
+        </div>
+        <div class="col-sm-1">
+            <img class="copy_normal" id="${window.location.origin}/${username}/${filename}" name="${filename}" src="/static/copy.png" style="width: 20px;" onclick="copy(this);" ${public ? "" : "hidden"}>
+        </div>
+    </div>
+    `
+
+    document.getElementById("files").innerHTML += element;
+}
+
+let update_visibility = function(checkbox) {
+    console.log(checkbox.checked);
+    let img = document.getElementById(checkbox.name);
+    img.hidden = !checkbox.checked;
+
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/permissions/" + img.name + "/" + checkbox.checked);
+
+    xhr.onload = function() {
+        console.log(xhr.status);
+        if (xhr.status == 202) {
+        }
+        else {
+            checkbox.checked = false;
+        }
+    };
+
+    xhr.setRequestHeader("username", sessionStorage.getItem("username"));
+    xhr.setRequestHeader("password", sessionStorage.getItem("password"));
+
+    xhr.send();
+
+
+}
+
 window.onload = function() {
     let username = sessionStorage.getItem("username");
     let password = sessionStorage.getItem("password");
@@ -129,5 +202,6 @@ window.onload = function() {
     else {
         document.getElementById("title").innerText = username;
         document.getElementById("username").innerText = username;
+        get_user_images(username, password);
     }
 }
