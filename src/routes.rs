@@ -43,9 +43,8 @@ fn register() -> Template {
 }
 
 #[rocket::get("/user")]
-fn user() -> String {
-
-    "user page".to_string()
+fn user() -> Template {
+    Template::render("view", rocket_dyn_templates::context!{})
 }
 
 

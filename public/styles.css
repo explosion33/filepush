@@ -5,3 +5,51 @@
     display: flex;
     align-items: center;
 }
+
+#drop-area {
+    border: 1px solid #979797;
+    height: 250px;
+}
+
+.copy_normal {
+    transition: all 1s ease-in-out;
+    filter: none;
+    translate: 0px -1px;
+}
+
+.clicked {
+    animation: 0.2s clicked;
+    translate: 0px 0px;
+    filter: brightness(90%) sepia(100) saturate(100) hue-rotate(70deg);
+}
+  
+@keyframes clicked {
+    0% {
+        translate: 0px -1px
+    }
+
+    50% {
+        translate: 0px -3px;
+    }
+
+    100% {
+        translate: 0px -1px;
+    }
+}
+  
+  .fade-out {
+    translate: 0px 5px;
+    animation: 0.8s fade_out;
+    opacity: 0;
+  }
+  
+  @keyframes fade_out {
+    from {
+      opacity: 1;
+    }
+  
+    to {
+      opacity: 0;
+    }
+  }
+  

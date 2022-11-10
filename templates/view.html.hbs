@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- The page supports both dark and light color schemes,
+         and the page author prefers / default is light. -->
+    <meta name="color-scheme" content="dark light">
+
+    <script src="/static/views.js"></script> 
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/bootstrap_dark.css">
+
+
+
+    <title id = "title">FilePush</title>
+</head>
+
+
+<body>
+    <div class="row">
+        <div class="col-sm-1 text-center" style="margin-top: 16px;">
+            <strong id="username">explosion33</strong>
+        </div>
+        <div class="col-sm-10 text-center">
+            <h3>FilePush</h3>
+        </div>
+        <div class="col-sm-1 text-center" style="margin-top: 16px;">
+            <button type="button" class="btn btn-danger" onclick="show_login()">logout</button>
+        </div>
+    </div>
+    <br>
+    <br>
+    
+    <div class="row">
+        <div class="col-sm-3">
+            <div style="margin-left: 24px;" id="files">
+                <div class="row">
+                    <div class="col-sm-9 align-items-center">
+                        <strong>File Name</strong>
+                    </div>
+                    
+                    <div class="col-sm-2">
+                        <strong>Public</strong>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-9 align-items-center">
+                        <p name="localhost/explosion33/image.png">image.png</p>
+                    </div>
+                    
+                    <div class="col-sm-2">
+                        <input type="checkbox" onchange="console.log(this.checked)">
+                    </div>
+                    <div class="col-sm-1">
+                        <img class="copy_normal" id="localhost/explosion33/image.png" src="/static/copy.png" style="width: 20px;" onclick="copy(this);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6">
+
+            <div class="">
+                <div class="row text-center">
+                    <div class="col-sm-10 offset-sm-1" id="drop-area" ondragover="allowDrop()" ondrop="drop(event)">
+                        <p>Drag and Drop</p>
+                        <input class="form-control-file" style="display: none;" type=file id="dialog" name=file onchange="dialog(event)">
+                        <input class="" type="button" value="Browse" onclick="document.getElementById('dialog').click();" /> 
+                    </div>
+                </div>
+
+                <br>
+                <br>
+
+                <div class="row-text-center">
+                    <div class="col-sm-8 offset-sm-2">
+                        <div class="progress">
+                            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-3">test</div>
+    </div>
+
+</body>
+</html>
+
+
+
+
+
