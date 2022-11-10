@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::fs::{create_dir_all, read_dir};
+use std::fs::{create_dir_all, read_dir, remove_file};
 
 use rocket::data::ToByteUnit;
 use rocket::{
@@ -394,6 +394,35 @@ fn set_file_permissions(state: &State<TUsers>, file_name: String, visible: bool,
 
 }
 
+#[rocket::post("/delete/<file_name>")]
+async fn delete_file(state: &State<TUsers>, file_name: String, user: UserLogin) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+    let verify = || -> bool {
+        let users = match state.lock() {
+            Ok(n) => n,
+            Err(_) => {return false;}
+        };
+
+        let user = NewUser {username: user.username.clone(), password: user.password.clone()};
+        return users.verify_user(&user);
+    };
+
+    match verify() {
+        true => {},
+        false => {
+            return Err(status::BadRequest(Some(format!("Invalid Username or Password"))));
+        },
+    };
+
+    let path = "user_files/".to_string() + user.username.as_str() + "/" + safe_path(file_name.clone()).as_str();
+
+    match remove_file(path) {
+        Ok(_) => {},
+        Err(_) => {return Err(status::BadRequest(Some(format!("File Does not Exist"))));}
+    };
+
+    return set_file_permissions(state, file_name, false, user);
+
+}
 
 fn update_file(users: TUsers, delay: Duration) {
     loop {
@@ -426,7 +455,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images])
+            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file])
             .attach(Template::fairing())
             .manage(users)
             .launch()

@@ -1,2 +1,1 @@
-{"username":"user","hash":"0Gq9lEjqBp7kojf5J+E7jY7HUOJShmAgM9v90BTaLvM","salt":"DBp96/EFaGgecxkVbDU+5g","settings":{"username":"user","public":[]}}
-{"username":"explosion33","hash":"qB+XjmT/MI5vnxJ0ZfVSKyw2JR8umpppqnixZuhuuyo","salt":"3m0n/1D1cXZgAupSj9T+Dg","settings":{"username":"explosion33","public":["test.txt","Armstrong_Ethan_Resume.pdf","Armstrong_Ethan.pdf"]}}
+{"username":"explosion33","hash":"qB+XjmT/MI5vnxJ0ZfVSKyw2JR8umpppqnixZuhuuyo","salt":"3m0n/1D1cXZgAupSj9T+Dg","settings":{"username":"explosion33","public":["Armstrong_Ethan_Resume.pdf"]}}

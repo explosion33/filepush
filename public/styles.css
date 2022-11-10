@@ -11,7 +11,7 @@
     height: 250px;
 }
 
-.copy_normal {
+.normal {
     transition: all 1s ease-in-out;
     filter: none;
     translate: 0px -1px;
@@ -36,20 +36,32 @@
         translate: 0px -1px;
     }
 }
+
+
+.normal2 {
+    transition: all 1s ease-in-out;
+    filter: none;
+    translate: 0px -5px;
+    filter: brightness(70%)
+}
+
+.clicked2 {
+    animation: 0.2s clicked2;
+    translate: 0px -5px;
+    filter: brightness(50%) sepia(100) saturate(100) hue-rotate(0deg);
+}
   
-  .fade-out {
-    translate: 0px 5px;
-    animation: 0.8s fade_out;
-    opacity: 0;
-  }
-  
-  @keyframes fade_out {
-    from {
-      opacity: 1;
+@keyframes clicked2 {
+    0% {
+        translate: 0px -5px
     }
-  
-    to {
-      opacity: 0;
+
+    50% {
+        translate: 0px -7px;
     }
-  }
+
+    100% {
+        translate: 0px -5px;
+    }
+}
   

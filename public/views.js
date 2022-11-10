@@ -123,9 +123,35 @@ let copy = function(img) {
         //img.src = "/static/copy_green.png"
 
         setTimeout(function () {
-            img.className = "copy_normal"
+            img.className = "normal"
         }, 1000)
     }
+}
+
+let del = function(img) {
+    if (img.className != "clicked2") {
+        img.className = "clicked2"
+        //img.src = "/static/copy_green.png"
+
+        setTimeout(function () {
+            img.className = "normal2"
+        }, 1000)
+    }
+
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/delete/" + img.name);
+
+    xhr.onload = function() {
+        console.log(xhr.status);
+        if (xhr.status == 202) {
+            img.parentElement.parentElement.remove();
+        }
+    };
+
+    xhr.setRequestHeader("username", sessionStorage.getItem("username"));
+    xhr.setRequestHeader("password", sessionStorage.getItem("password"));
+
+    xhr.send();
 }
 
 let get_user_images = function(username, password) {
@@ -155,7 +181,7 @@ let show_image = function(filename, public) {
     let element =
     `
     <div class="row">
-        <div class="col-sm-9 align-items-center">
+        <div class="col-sm-8 align-items-center">
             <p name="${window.location.origin}/${username}/${filename}">${filename}</p>
         </div>
         
@@ -163,7 +189,10 @@ let show_image = function(filename, public) {
             <input name="${window.location.origin}/${username}/${filename}" type="checkbox" onchange="update_visibility(this)" ${public ? "checked" : ""}>
         </div>
         <div class="col-sm-1">
-            <img class="copy_normal" id="${window.location.origin}/${username}/${filename}" name="${filename}" src="/static/copy.png" style="width: 20px;" onclick="copy(this);" ${public ? "" : "hidden"}>
+            <img class="normal" id="${window.location.origin}/${username}/${filename}" name="${filename}" src="/static/copy.png" style="width: 20px;" onclick="copy(this);" ${public ? "" : "hidden"}>
+        </div>
+        <div class="col-sm-1">
+            <img class="normal2" name="${filename}" src="/static/trash_closed.png" style="width: 21px;" onclick="del(this);">
         </div>
     </div>
     `
