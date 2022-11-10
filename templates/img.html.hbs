@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/bootstrap_dark.css">
+
+    <script defer>
+        let filename = "{{file_name}}";
+
+        let arr = filename.split(".");
+        let ext = arr[arr.length - 1];
+
+        let xhr = new XMLHttpRequest();        
+        xhr.open("GET", "/file/" + filename);
+
+        xhr.onload = function() {
+            console.log(xhr.status);
+            if (xhr.status == 200) {
+                var blob = xhr.response;
+                var fileName = xhr.getResponseHeader("fileName") //if you have the fileName header available
+                var link=document.createElement('a');
+                window.location.href=window.URL.createObjectURL(blob);
+            }
+        };
+
+        xhr.responseType = "blob"
+
+        xhr.setRequestHeader("username", sessionStorage.getItem("username"));
+        xhr.setRequestHeader("password", sessionStorage.getItem("password"));
+
+    xhr.send();
+    </script>
+
+    <title>FilePush</title>
+</head>
+
+<body>
+    <img class="transparent shrinkToFit" src=""></img>
+</body>
+</html>

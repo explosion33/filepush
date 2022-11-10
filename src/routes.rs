@@ -47,6 +47,11 @@ fn user() -> Template {
     Template::render("view", rocket_dyn_templates::context!{})
 }
 
+#[rocket::get("/view/<file>")]
+fn view(file: String) -> Template {
+    Template::render("img", rocket_dyn_templates::context!{file_name: file})
+}
+
 
 #[rocket::get("/events")]
 fn stream() -> EventStream![] {
@@ -155,16 +160,21 @@ impl<'r> FromRequest<'r> for FileHeader {
     async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let filename = match req.headers().get_one("filename") {
             Some(n) => n,
-            None => {return Outcome::Failure((Status::BadRequest, HeaderError::Missing))}
+            None => {
+                println!("missing file name");
+                return Outcome::Failure((Status::BadRequest, HeaderError::Missing))}
         };
         let bytes_str = match req.headers().get_one("bytes") {
             Some(n) => n,
-            None => {return Outcome::Failure((Status::BadRequest, HeaderError::Missing))}
+            None => {
+                println!("missing file size");
+                return Outcome::Failure((Status::BadRequest, HeaderError::Missing))}
         };
 
         let bytes: u64 = match bytes_str.parse() {
             Ok(n) => n,
-            Err(_) => {
+            Err(n) => {
+                println!("{} | recieved: {}", n, bytes_str);
                 return Outcome::Failure((Status::BadRequest, HeaderError::BadFormat))
             }
         };
@@ -455,7 +465,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file])
+            .mount("/", rocket::routes![index, login, register, user, view, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file])
             .attach(Template::fairing())
             .manage(users)
             .launch()
