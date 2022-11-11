@@ -64,4 +64,46 @@
         translate: 0px -5px;
     }
 }
+
+.link {
+    color: white;
+    text-decoration: none;
+    cursor: pointer;
+
+    background:
+    linear-gradient(
+      to right,
+      rgba(100, 200, 200, 1),
+      rgba(100, 200, 200, 1)
+    ),
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 1),
+      rgba(255, 255, 255, 1),
+      rgba(255, 255, 255, 1)
+    );
+    background-size: 0% 3px, 0 3px;
+    background-position: 100% 100%, 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 400ms;
+}
+
+.link:hover {
+    background-size: 0 3px, 100% 3px;
+  }
   
+.link::before {
+    content: "";
+    display: inline;
+    width: 0%;
+    height: 0.2em;
+    position: absolute;
+    bottom: 0;
+    background-color: var(--clr-primary);
+    transition: width 0.2s ease-in;
+}
+
+.link:hover::before,
+.link:focus::before {
+    width: 100%;
+}
