@@ -20,15 +20,15 @@
 
 
 <body>
-    <div class="row">
-        <div class="col-sm-1 text-center" style="margin-top: 16px;">
-            <strong id="username">explosion33</strong>
+    <div class="row" style="margin-top: 16px;">
+        <div class="col-sm-3 text-start">
+            <strong id="username" style="margin-left: 5%;">explosion33</strong>
         </div>
-        <div class="col-sm-10 text-center">
+        <div class="col-sm-6 text-center">
             <h3>FilePush</h3>
         </div>
-        <div class="col-sm-1 text-center" style="margin-top: 16px;">
-            <button type="button" class="btn btn-danger" onclick="show_login()">logout</button>
+        <div class="col-sm-3 text-end">
+            <button style="margin-right: 5%" type="button" class="btn btn-danger" onclick="show_login()">logout</button>
         </div>
     </div>
     <br>
@@ -74,7 +74,18 @@
             </div>
         </div>
 
-        <div class="col-sm-3"></div>
+        <div class="col-sm-3">
+            <span>Client: </span>
+            {{#if connected}}
+            <span style="color: green;">Connected</span>
+            {{else}}
+            <span style="color: red;">Disonnected</span>
+            <div style="max-height: 35vh; height: 100%"></div>
+            <div class="text-end" style="margin-right: 16px;">
+                <a class="btn btn-info" href="/client"> Setup client here</a>
+            </div>
+            {{/if}}
+        </div>
     </div>
 
 </body>

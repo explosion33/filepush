@@ -116,8 +116,14 @@ fn register() -> Template {
 
 #[rocket::get("/user")]
 fn user() -> Template {
-    Template::render("view", rocket_dyn_templates::context!{})
+    Template::render("view", rocket_dyn_templates::context!{connected: false})
 }
+
+#[rocket::get("/client")]
+fn client() -> Template {
+    Template::render("client", rocket_dyn_templates::context!{})
+}
+
 
 #[rocket::get("/view/<file>")]
 fn view(file: String) -> Template {
@@ -508,7 +514,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, view, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file])
+            .mount("/", rocket::routes![index, login, register, user, view, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file, client])
             .attach(Template::fairing())
             .manage(users)
             .launch()
