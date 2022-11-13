@@ -1,4 +1,4 @@
-use std::{thread, io::BufReader};
+use std::{thread, io::{BufReader, BufWriter}};
 
 use reqwest;
 
@@ -39,8 +39,58 @@ impl Settings {
     }
 }
 
+macro_rules! input {
+    {} => {{
+        input!("")
+    }};
+
+    ($a:expr) => {{
+        use std::io;
+        use std::io::Write;
+
+        print!("{}", $a);
+        let _ = io::stdout().flush();
+
+        let mut line = String::new();
+        io::stdin().read_line(&mut line).expect("Error reading from stdin");
+        line.trim().to_string()
+    }};
+}
+
+
+fn prompt_settings() -> Settings {
+    println!("First Time Setup:");
+    let username = input!("Enter Username: ");
+    let password = input!("Enter Password: ");
+    let url = input!("Enter FilePush server URL: ");
+    let path = input!("Enter Path to download files to: ");
+
+    Settings { username, password, url, path}
+}
+
 fn main() {
-    let settings = Settings::new(format!("{}\\filepush\\settings.txt", document_dir().unwrap().to_str().unwrap()).as_str()).unwrap();
+    let settings = match Settings::new(format!("{}\\filepush\\settings.txt", document_dir().unwrap().to_str().unwrap()).as_str()) {
+        Ok(n) => n,
+        Err(_) => {
+            let settings = prompt_settings();
+
+            let file = match OpenOptions::new()
+                .create(true)
+                .write(true)
+                .open(format!("{}\\filepush\\settings.txt", document_dir().unwrap().to_str().unwrap()))
+                {
+                    Ok(n) => n,
+                    Err(n) => {
+                        println!("Error getting settings file | {}", n);
+                        return;
+                    },
+                };
+            let writer  = BufWriter::new(file);
+
+            serde_json::to_writer(writer, &settings).expect("error writing settings to file");
+            settings
+        } 
+    };
 
     println!("{:?}", settings);
 
