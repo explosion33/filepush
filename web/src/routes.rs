@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::fs::{create_dir_all, read_dir, remove_file};
 
-use rocket::data::ToByteUnit;
 use rocket::{
     self,
     Config,
@@ -17,6 +17,7 @@ use rocket::{
     serde::json::Json,
     http::Status,
     Data,
+    data::ToByteUnit,
 };
 use rocket_dyn_templates::Template;
 
@@ -116,7 +117,7 @@ fn register() -> Template {
 
 #[rocket::get("/user")]
 fn user() -> Template {
-    Template::render("view", rocket_dyn_templates::context!{connected: false})
+    Template::render("view", rocket_dyn_templates::context!{})
 }
 
 #[rocket::get("/client")]
@@ -133,18 +134,20 @@ fn view(file: String) -> Template {
 
 #[rocket::get("/events")]
 fn stream(state: &State<TUsers>, user: UserLogin) -> Result<EventStream![Event + '_], status::Unauthorized<String>> {
-    let verify = || -> bool {
-        let users = match state.lock() {
-            Ok(n) => n,
-            Err(_) => {return false;}
-        };
-
-        let user = NewUser {username: user.username.clone(), password: user.password.clone()};
-        return users.verify_user(&user);
+    let mut users = match state.lock() {
+        Ok(n) => n,
+        Err(_) => {return Err(status::Unauthorized(Some(format!("Internal Server Error"))));}
     };
 
-    if !verify() {
+    let user = NewUser {username: user.username.clone(), password: user.password.clone()};
+    if !users.verify_user(&user) {
         return Err(status::Unauthorized(Some(format!("Invalid Username or Password"))));
+    }
+
+    {
+        let mut user = users.find_user(&user.username).unwrap();
+        user.has_client = true;
+        users.update_user(user);
     }
 
     Ok( EventStream! {
@@ -161,7 +164,18 @@ fn stream(state: &State<TUsers>, user: UserLogin) -> Result<EventStream![Event +
             return files;
         };
 
+        let (tx, rx) = mpsc::channel();
+
+        let users = Arc::clone(state.inner());
+        let username = user.username.clone();
+
+        thread::spawn(move || {
+            detect_client_still_connected(rx, users, username);
+        });
+
         loop {
+            let _ = tx.send(String::new());
+
             let new_files = get_new_files();
 
             if (new_files.len() != 0) {
@@ -199,6 +213,7 @@ fn verify_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Acc
 
     Err(status::BadRequest(Some(format!("Username or Password is invalid"))))
 }
+
 
 #[rocket::post("/delete_user", data = "<data>")]
 fn delete_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
@@ -327,6 +342,29 @@ async fn file_link(state: &State<TUsers>, user: UserLogin, file: PathBuf) -> Res
         Err(_) =>  Err(status::BadRequest(Some(format!("File does not exist"))))
     }
 }
+
+#[rocket::get("/has_client")]
+fn has_client(state: &State<TUsers>, user: UserLogin) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+    let users = match state.lock() {
+        Ok(n) => n,
+        Err(_) => {return Err(status::BadRequest(Some(format!("InternalServerError"))));}
+    };
+
+    let user = NewUser {username: user.username.clone(), password: user.password};
+    if !users.verify_user(&user) {
+        return Err(status::BadRequest(Some(format!("Invalid Username or Password"))));
+    }
+
+    let mut out: String = "false".to_string();
+    if users.find_user(&user.username).unwrap().has_client {
+        out = "true".to_string();
+    }
+
+    Ok(status::Accepted(Some(out)))
+
+}
+
+
 
 #[rocket::get("/<username>/<file>")]
 async fn file_link_public(state: &State<TUsers>, username: String, file: String) -> Result<NamedFile, status::BadRequest<String>> {
@@ -495,6 +533,25 @@ fn update_file(users: TUsers, delay: Duration) {
     }
 }
 
+fn detect_client_still_connected(rx: Receiver<String>, users: TUsers, username: String) {
+    loop {
+        match rx.recv() {
+            Ok(_) => {
+
+            },
+            Err(_) => {
+                let mut users = users.lock().unwrap();
+                let mut user = users.find_user(&username).unwrap();
+                user.has_client = false;
+                users.update_user(user);
+
+                println!("client disconnected");
+                break;
+            }
+        }
+    }
+}
+
 pub fn start_api() {
     let users: TUsers = Arc::new(Mutex::new(Users::new("users.txt".to_string())));
 
@@ -514,7 +571,7 @@ pub fn start_api() {
         .expect("create tokio runtime")
         .block_on(async move {
             let _ = rocket::build()
-            .mount("/", rocket::routes![index, login, register, user, view, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file, client])
+            .mount("/", rocket::routes![index, login, register, user, view, verify_user, delete_user, register_user, file_upload, file_link, file_link_public, get_file, stream, set_file_permissions, get_user_images, delete_file, client, has_client])
             .attach(Template::fairing())
             .manage(users)
             .launch()

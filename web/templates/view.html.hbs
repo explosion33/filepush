@@ -76,15 +76,11 @@
 
         <div class="col-sm-3">
             <span>Client: </span>
-            {{#if connected}}
-            <span style="color: green;">Connected</span>
-            {{else}}
-            <span style="color: red;">Disonnected</span>
+            <span id="status" style="color: red;">Disonnected</span>
             <div style="max-height: 35vh; height: 100%"></div>
             <div class="text-end" style="margin-right: 16px;">
-                <a class="btn btn-info" href="/client"> Setup client here</a>
+                <a class="btn btn-info" href="/client"> Setup Client Here</a>
             </div>
-            {{/if}}
         </div>
     </div>
 

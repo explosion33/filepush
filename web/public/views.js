@@ -225,6 +225,34 @@ let update_visibility = function(checkbox) {
 
 }
 
+let get_user_has_client = function(username, password) {
+    let xhr = new XMLHttpRequest();
+    xhr.open("GET", "/has_client");
+
+    xhr.onload = function() {
+        console.log(xhr.status);
+        if (xhr.status == 202) {
+            let status = document.getElementById("status");
+            if (xhr.responseText == "true") {
+                status.innerText = "Connected";
+                status.style.color = "green";
+            }
+            else {
+                status.innerText = "Disconnected";
+                status.style.color = "red";
+            }
+        }
+        else {
+            console.log(xhr.responseText);
+        }
+    };
+
+    xhr.setRequestHeader("username", username);
+    xhr.setRequestHeader("password", password);
+
+    xhr.send();
+}
+
 window.onload = function() {
     let username = sessionStorage.getItem("username");
     let password = sessionStorage.getItem("password");
@@ -237,4 +265,8 @@ window.onload = function() {
         document.getElementById("username").innerText = username;
         get_user_images(username, password);
     }
+
+    setInterval(function () {
+        get_user_has_client(username, password);
+    }, 1500);
 }

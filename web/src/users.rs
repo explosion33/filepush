@@ -53,6 +53,7 @@ pub struct User {
     salt: String,
     pub settings: UserSettings,
     pub new_files: Vec<String>,
+    pub has_client: bool,
 }
 
 impl User {
@@ -113,6 +114,7 @@ impl Users {
             salt: String::new(),
             settings: UserSettings::new(username),
             new_files: vec![],
+            has_client: false,
         };
 
         match self.users.get(&dummy_user) {
@@ -224,7 +226,7 @@ impl Users {
         let settings = UserSettings::new(&user.username);
         let new_files: Vec<String> = vec![];
 
-        let u = User {username: user.username.clone(), hash, salt, settings, new_files};
+        let u = User {username: user.username.clone(), hash, salt, settings, new_files, has_client: false};
 
         self.users.insert(u);
 
