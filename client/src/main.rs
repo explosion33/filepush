@@ -1,4 +1,4 @@
-use std::thread;
+use std::{thread, io::BufReader};
 
 use reqwest;
 
@@ -8,16 +8,51 @@ use tokio;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 
-fn main() {
-    let rt = tokio::runtime::Runtime::new().expect("Error | Could not create runtime");
-    rt.block_on(stream("explosion33", "password", ""));
+use serde::{Serialize, Deserialize};
+use serde_json;
+
+use dirs::document_dir;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Settings {
+    pub username: String,
+    pub password: String,
+    pub url: String,
+    pub path: String
 }
 
-async fn stream(username: &str, password: &str, path: &str) {
+impl Settings {
+    fn new(path: &str) -> Result<Settings, String> {
+        let file = match OpenOptions::new()
+            .read(true)
+            .open(path)
+            {
+                Ok(n) => n,
+                Err(n) => {return Err(format!("Error opening file | {}", n))},
+            };
+        let reader  = BufReader::new(file);
+        
+        match serde_json::from_reader(reader) {
+            Ok(n) => Ok(n),
+            Err(n) => Err(format!("Error | {}", n)) 
+        }
+    }
+}
+
+fn main() {
+    let settings = Settings::new(format!("{}\\filepush\\settings.txt", document_dir().unwrap().to_str().unwrap()).as_str()).unwrap();
+
+    println!("{:?}", settings);
+
+    let rt = tokio::runtime::Runtime::new().expect("Error | Could not create runtime");
+    rt.block_on(stream(&settings));
+}
+
+async fn stream(settings: &Settings) {
     let client = reqwest::Client::new();
-    let res = match client.get("http://localhost/events")
-    .header("username", username)
-    .header("password", password)
+    let res = match client.get(format!("{}/events", settings.url))
+    .header("username", &settings.username)
+    .header("password", &settings.password)
     .send()
     .await
     {
@@ -62,11 +97,10 @@ async fn stream(username: &str, password: &str, path: &str) {
 
             println!("{}", name);
 
-            let username2 = username.to_string();
-            let password2 = password.to_string();
-            let path2 = path.to_string();
+            let settings_clone = settings.clone();
+            let name_clone = name.to_string() ;
             thread::spawn(move || {
-                let res = download_file(name.as_str(), username2.as_str(), password2.as_str(), path2.as_str());
+                let res = download_file(settings_clone, name_clone.as_str());
                 
                 match res {
                     Ok(_) => {},
@@ -81,24 +115,30 @@ async fn stream(username: &str, password: &str, path: &str) {
     }
 }
 
-fn download_file(name: &str, username: &str, password: &str, path: &str) -> Result<(), String> {
+fn download_file(settings: Settings, name: &str) -> Result<(), String> {
     let mut file = match OpenOptions::new()
         .create(true)
         .write(true)
-        .open(format!("{}{}", path, name)) {
+        .open(format!("{}\\{}", settings.path, name)) {
             Ok(n) => n,
             Err(n) => {return Err(format!("Error opening file | {}", n))},
         };
 
+    println!("{}/{}", settings.url, name);
     let client = reqwest::blocking::Client::new();
-    let data = match client.get(format!("http://localhost/file/{}", name))
-        .header("username", username)
-        .header("password", password)
+    let data = match client.get(format!("{}/file/{}", settings.url, name))
+        .header("username", settings.username)
+        .header("password", settings.password)
         .send()
         {
             Ok(n) => n,
             Err(n) => {return Err(format!("Error getting file from server | {}", n))} 
         };
+
+    let data = match data.error_for_status() {
+        Ok(n) => n,
+        Err(n) => {return Err(format!("Error | {}", n))}
+    };
 
     match file.write_all(&match data.bytes() {
         Ok(n) => n,
