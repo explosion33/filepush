@@ -24,97 +24,6 @@ use crate::users::{Users, NewUser};
 
 pub type TUsers = Arc<Mutex<Users>>;
 
-#[rocket::get("/event")]
-fn index() -> Template {
-
-    Template::render("event", rocket_dyn_templates::context!{})
-}
-
-#[rocket::get("/")]
-fn login() -> Template {
-
-    Template::render("login", rocket_dyn_templates::context!{})
-}
-
-#[rocket::get("/register")]
-fn register() -> Template {
-
-    Template::render("register", rocket_dyn_templates::context!{})
-}
-
-#[rocket::get("/user")]
-fn user() -> Template {
-    Template::render("view", rocket_dyn_templates::context!{})
-}
-
-#[rocket::get("/view/<file>")]
-fn view(file: String) -> Template {
-    Template::render("img", rocket_dyn_templates::context!{file_name: file})
-}
-
-
-#[rocket::get("/events")]
-fn stream() -> EventStream![] {
-    EventStream! {
-        let mut interval = time::interval(Duration::from_secs(1));
-        loop {
-            yield Event::data("ping");
-            interval.tick().await;
-        }
-    }
-}
-
-#[rocket::post("/register", data = "<data>")]
-fn register_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
-    let mut users = state.lock().unwrap();
-    let new_user = data.into_inner();
-
-    match users.add_new_user(&new_user) {
-        Ok(_) => {
-            return Ok(status::Accepted(Some(format!(""))));
-        },
-        Err(_) => {
-            return Err(status::BadRequest(Some(format!("User already exists"))));
-        }
-    };
-}
-
-#[rocket::post("/verify", data = "<data>")]
-fn verify_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
-    let users = state.lock().unwrap();
-    let new_user = data.into_inner();
-
-    if users.verify_user(&new_user) {
-        return Ok(status::Accepted(Some(format!(""))));
-    }
-
-    Err(status::BadRequest(Some(format!("Username or Password is invalid"))))
-}
-
-#[rocket::post("/delete_user", data = "<data>")]
-fn delete_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
-    let mut users = state.lock().unwrap();
-    let new_user = data.into_inner();
-
-    if !users.verify_user(&new_user) {
-        return Err(status::BadRequest(Some(format!("Username or Password is invalid"))));
-    }
-
-    let user = match users.find_user(&new_user.username) {
-        Some(n) => n,
-        None => {return Err(status::BadRequest(Some(format!("User does not exist"))))},
-    };
-
-    users.remove_user(&user);
-
-    return Ok(status::Accepted(Some(format!("200 OK"))));
-}
-
-#[rocket::get("/static/<file>")]
-async fn get_file(file: PathBuf) -> Option<NamedFile> {
-    NamedFile::open(Path::new("public/").join(file)).await.ok()
-}
-
 struct UserLogin {
     username: String,
     password: String,
@@ -187,6 +96,127 @@ impl<'r> FromRequest<'r> for FileHeader {
     }
 }
 
+#[rocket::get("/event")]
+fn index() -> Template {
+
+    Template::render("event", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/")]
+fn login() -> Template {
+
+    Template::render("login", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/register")]
+fn register() -> Template {
+
+    Template::render("register", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/user")]
+fn user() -> Template {
+    Template::render("view", rocket_dyn_templates::context!{})
+}
+
+#[rocket::get("/view/<file>")]
+fn view(file: String) -> Template {
+    Template::render("img", rocket_dyn_templates::context!{file_name: file})
+}
+
+
+#[rocket::get("/events")]
+fn stream(state: &State<TUsers>, user: UserLogin) -> Result<EventStream![Event + '_], status::Unauthorized<String>> {
+    let verify = || -> bool {
+        let users = match state.lock() {
+            Ok(n) => n,
+            Err(_) => {return false;}
+        };
+
+        let user = NewUser {username: user.username.clone(), password: user.password.clone()};
+        return users.verify_user(&user);
+    };
+
+    if !verify() {
+        return Err(status::Unauthorized(Some(format!("Invalid Username or Password"))));
+    }
+
+    Ok( EventStream! {
+        let mut interval = time::interval(Duration::from_secs(1));
+
+        let get_new_files = || -> Vec<String> {
+            let mut users = state.lock().unwrap();
+            let mut user = users.find_user(&user.username).unwrap();
+            let files = user.new_files.clone();
+
+            user.new_files = Vec::new();
+            users.update_user(user);
+
+            return files;
+        };
+
+        loop {
+            let new_files = get_new_files();
+
+            if (new_files.len() != 0) {
+                yield Event::json(&new_files);
+            }
+
+            interval.tick().await;
+        }
+    })
+}
+
+#[rocket::post("/register", data = "<data>")]
+fn register_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+    let mut users = state.lock().unwrap();
+    let new_user = data.into_inner();
+
+    match users.add_new_user(&new_user) {
+        Ok(_) => {
+            return Ok(status::Accepted(Some(format!(""))));
+        },
+        Err(_) => {
+            return Err(status::BadRequest(Some(format!("User already exists"))));
+        }
+    };
+}
+
+#[rocket::post("/verify", data = "<data>")]
+fn verify_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+    let users = state.lock().unwrap();
+    let new_user = data.into_inner();
+
+    if users.verify_user(&new_user) {
+        return Ok(status::Accepted(Some(format!(""))));
+    }
+
+    Err(status::BadRequest(Some(format!("Username or Password is invalid"))))
+}
+
+#[rocket::post("/delete_user", data = "<data>")]
+fn delete_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::Accepted<String>, status::BadRequest<String>> {
+    let mut users = state.lock().unwrap();
+    let new_user = data.into_inner();
+
+    if !users.verify_user(&new_user) {
+        return Err(status::BadRequest(Some(format!("Username or Password is invalid"))));
+    }
+
+    let user = match users.find_user(&new_user.username) {
+        Some(n) => n,
+        None => {return Err(status::BadRequest(Some(format!("User does not exist"))))},
+    };
+
+    users.remove_user(&user);
+
+    return Ok(status::Accepted(Some(format!("200 OK"))));
+}
+
+#[rocket::get("/static/<file>")]
+async fn get_file(file: PathBuf) -> Option<NamedFile> {
+    NamedFile::open(Path::new("public/").join(file)).await.ok()
+}
 
 fn safe_path(path: String) -> String {
     path
@@ -244,6 +274,19 @@ async fn file_upload(state: &State<TUsers>, file: Data<'_>, user: UserLogin, upl
 
     // WEBHOOK
     // EVENT SERVER
+
+    {
+        match state.lock() {
+            Ok(mut users) => {
+                let mut user = users.find_user(&user.username).unwrap();
+                user.new_files.push(name.clone());
+                users.update_user(user);
+            },
+            Err(_) => {}
+        };
+
+    }
+
     // FILE TIMER
 
     Ok(status::Accepted(Some(format!("{}", name))))

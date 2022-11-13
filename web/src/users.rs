@@ -52,6 +52,7 @@ pub struct User {
     hash: String,
     salt: String,
     pub settings: UserSettings,
+    pub new_files: Vec<String>,
 }
 
 impl User {
@@ -111,6 +112,7 @@ impl Users {
             hash: String::new(),
             salt: String::new(),
             settings: UserSettings::new(username),
+            new_files: vec![],
         };
 
         match self.users.get(&dummy_user) {
@@ -220,8 +222,9 @@ impl Users {
         };
 
         let settings = UserSettings::new(&user.username);
+        let new_files: Vec<String> = vec![];
 
-        let u = User {username: user.username.clone(), hash, salt, settings};
+        let u = User {username: user.username.clone(), hash, salt, settings, new_files};
 
         self.users.insert(u);
 
