@@ -266,6 +266,7 @@ window.onload = function() {
         get_user_images(username, password);
     }
 
+    get_user_has_client(username, password);
     setInterval(function () {
         get_user_has_client(username, password);
     }, 1500);

@@ -194,6 +194,16 @@ fn register_user(state: &State<TUsers>, data: Json<NewUser>) -> Result<status::A
 
     match users.add_new_user(&new_user) {
         Ok(_) => {
+
+            let base = "user_files/".to_string() + new_user.username.as_str();
+
+            match create_dir_all(base) {
+                Ok(_) => {},
+                Err(_) => {
+                    return Err(status::BadRequest(Some(format!("IO Error"))));
+                },
+            };
+
             return Ok(status::Accepted(Some(format!(""))));
         },
         Err(_) => {

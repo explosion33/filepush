@@ -1,1 +1,0 @@
-{"username":"explosion33","hash":"IBSMgCOFkcJ/xqKkzSlTo2BHn8H8EG2xQDErtVT0yAk","salt":"c37U84msR6hCovXHIq6vUA","settings":{"username":"explosion33","public":[]},"new_files":[],"has_client":false}

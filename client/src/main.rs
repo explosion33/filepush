@@ -107,8 +107,8 @@ async fn stream(settings: &Settings) {
     .await
     {
         Ok(n) => n,
-        Err(_) => {
-            println!("Error establishing connection with server");
+        Err(n) => {
+            println!("Error establishing connection with server | {}", n);
             return;
         } 
     };
@@ -132,6 +132,8 @@ async fn stream(settings: &Settings) {
             }},
             Err(_) => {continue;},
         };
+
+        println!("{}", data);
 
         if !data.starts_with("data:[") {
             continue;
